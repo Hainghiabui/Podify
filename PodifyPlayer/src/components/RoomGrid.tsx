@@ -1,69 +1,104 @@
 import colors from '@utils/colors';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {View, Text, StyleSheet} from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-
-interface IconProps {
-  name: string;
-  color: string;
+import Card from './Card';
+import axios from 'axios';
+interface Room {
+  floor: string;
+  id: number;
+  roomCode: string;
+  roomTypeCode: string;
+  blockBy: string | null;
+  blockRemark: string | null;
+  blockStatus: string | null;
+  hkStatus: string;
+  isBlocked: string;
+  roomStatus: string;
+  noofGuest: number | null;
+  isBackToBack: number;
+  guestStatus: string | null;
+  roomTypeName: string;
 }
-
-interface CardProps {
-  room: string;
-  statusColor: string;
-  icons: IconProps[];
+interface Floor {
+  floor: string;
+  data: Room[];
 }
-
-const Card: React.FC<CardProps> = ({room, statusColor, icons}) => (
-  <View style={[styles.card, {borderBottomColor: statusColor}]}>
-    <Text style={[styles.roomText, {color: statusColor}]}>{room}</Text>
-    <Text style={styles.statusText}>(02)</Text>
-    <View style={styles.iconsContainer}>
-      {icons.map((icon, index) => (
-        <Icon key={index} name={icon.name} size={30} color={icon.color} />
-      ))}
-    </View>
-  </View>
-);
-
 const RoomGrid: React.FC = () => {
+  const [floors, setFloors] = useState<Floor[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios
+      .post(
+        'https://api-gateway-test.apecgroup.net/api/cm/pms/hk/get-room-view',
+        {
+          buildingCode: 'DIAMOND',
+          floorCode: '',
+          dateRoom: '',
+          roomCode: '',
+          roomTypeCode: '',
+          blockStatus: '',
+          hkStatus: '',
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie:
+              'session_id=c2585eec3b4bd938bf0f45772e38c9205b772fb8; session_id=c2585eec3b4bd938bf0f45772e38c9205b772fb8',
+            'X-Api-Key': '34c85b1f6df12f96c0034664c8b1f1f3',
+            HotelId: 26,
+            Server: 'HK',
+          },
+        },
+      )
+      .then(response => {
+        if (
+          response.data.statusCode === 200 &&
+          response.data.message === 'Success'
+        ) {
+          setFloors(response.data.metadata);
+        } else {
+          console.error('Error fetching data');
+        }
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+      });
+  }, []);
+
   return (
-    <View style={styles.container}>
+    <View style={styles.roomGrid}>
       <Card
-        room="101 - DL1"
-        statusColor="orange"
         icons={[
-          {name: 'broom', color: 'blue'},
-          {name: 'broom', color: 'orange'},
+          {name: 'star', color: 'blue'},
+          {name: 'star', color: 'orange'},
         ]}
       />
       <Card
-        room="102 - DL1"
-        statusColor="orange"
         icons={[
-          {name: 'exchange', color: 'green'},
-          {name: 'broom', color: 'orange'},
+          {name: 'star', color: 'blue'},
+          {name: 'star', color: 'orange'},
         ]}
       />
       <Card
-        room="103 - DL1"
-        statusColor="green"
-        icons={[{name: 'broom', color: 'yellow'}]}
-      />
-      <Card
-        room="104 - DL1"
-        statusColor="orange"
         icons={[
-          {name: 'user', color: 'red'},
-          {name: 'broom', color: 'orange'},
+          {name: 'star', color: 'blue'},
+          {name: 'star', color: 'orange'},
         ]}
       />
       <Card
-        room="109 - DL1"
-        statusColor="blue"
         icons={[
-          {name: 'lock', color: 'gray'},
-          {name: 'broom', color: 'orange'},
+          {name: 'star', color: 'blue'},
+          {name: 'star', color: 'orange'},
+        ]}
+      />
+      <Card
+        icons={[
+          {name: 'star', color: 'blue'},
+          {name: 'star', color: 'orange'},
         ]}
       />
     </View>
@@ -71,31 +106,11 @@ const RoomGrid: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  roomGrid: {
     flex: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: 10,
-  },
-  card: {
-    width: '30%',
-    borderBottomWidth: 8,
-    backgroundColor: colors.WHITE,
-    borderRadius: 10,
-    padding: 10,
-    margin: 5,
-    alignItems: 'center',
-  },
-  roomText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  statusText: {
-    fontSize: 14,
-  },
-  iconsContainer: {
-    flexDirection: 'row',
-    marginTop: 10,
   },
 });
 

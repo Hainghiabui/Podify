@@ -12,6 +12,7 @@ import BuildingModal from '../components/BuildingModal';
 import FloorModal from '../components/FloorModal';
 import FloorList from '../components/FloorList';
 import axios from 'axios';
+import colors from '@utils/colors';
 
 const Home: React.FC = () => {
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
@@ -142,7 +143,7 @@ const Home: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F5F5F5'},
+  container: {flex: 1, backgroundColor: colors.PRIMARY, paddingBottom: 30},
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
