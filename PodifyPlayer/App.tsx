@@ -1,19 +1,15 @@
-import AppCotnainer from '@components/AppCotnainer';
-import {QueryClient, QueryClientProvider} from 'react-query';
-import {Provider} from 'react-redux';
-import AppNavigator from 'src/navigation';
+import React, {FC} from 'react';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import TabNavigator from '@components/navigation/TabNavigator';
 import store from 'src/store';
+import {Provider} from 'react-redux';
 
-const queryClient = new QueryClient();
+interface Props {}
 
-const App = () => {
+const App: FC<Props> = props => {
   return (
     <Provider store={store}>
-      <QueryClientProvider client={queryClient}>
-        <AppCotnainer>
-          <AppNavigator />
-        </AppCotnainer>
-      </QueryClientProvider>
+      <TabNavigator />
     </Provider>
   );
 };
