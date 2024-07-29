@@ -7,6 +7,7 @@ import {
   setSelectedFloors,
   clearSelectedFloors,
 } from '../store/selectedFloorsSlice';
+import {setFloors} from '../store/getFloorsSlice';
 import NavHeader from '../components/NavHeader';
 import BuildingModal from '../components/BuildingModal';
 import FloorModal from '../components/FloorModal';
@@ -21,11 +22,14 @@ const Home: React.FC = () => {
   const [floorModalVisible, setFloorModalVisible] = useState<boolean>(false);
   const [buildings, setBuildings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [floors, setFloors] = useState([]);
 
   const dispatch = useDispatch();
   const selectedFloors = useSelector(
     (state: RootState) => state.selectedFloors.selectedFloors,
+  );
+
+  const getFloors = useSelector(
+    (state: RootState) => state.getFloors.getFloors,
   );
 
   const extractNumber = (text: string) => text.replace(/^\D+/g, '');
@@ -74,6 +78,7 @@ const Home: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!selectedBuilding.value) return;
     axios
       .get(
         `https://sh-dev.qcloud.asia/booking/api/hk/get-floorcode-room-view?buildingCode=${selectedBuilding.value}`,
@@ -89,8 +94,7 @@ const Home: React.FC = () => {
           response.data.message === 'Success'
         ) {
           dispatch(clearSelectedFloors());
-          setFloors(response.data.metadata);
-          console.log(selectedBuilding.value);
+          dispatch(setFloors(response.data.metadata));
         } else {
           console.error('Error fetching data');
         }
@@ -100,7 +104,7 @@ const Home: React.FC = () => {
         console.error(error);
         setLoading(false);
       });
-  }, [selectedBuilding.value]);
+  }, [selectedBuilding.value, dispatch]);
 
   const handleDeleteAll = () => {
     dispatch(clearSelectedFloors());
@@ -131,7 +135,7 @@ const Home: React.FC = () => {
       />
       <FloorModal
         visible={floorModalVisible}
-        floors={floors}
+        floors={getFloors}
         onClose={() => setFloorModalVisible(false)}
         onSelect={selectFloors}
       />

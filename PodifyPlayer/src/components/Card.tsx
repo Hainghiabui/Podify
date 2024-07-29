@@ -7,7 +7,6 @@ interface IconProps {
   color: string;
 }
 interface Props {
-  // icons: IconProps[];
   roomCode: string;
   roomTypeCode: string;
   statusColor: string;
@@ -22,12 +21,12 @@ const Card: FC<Props> = props => {
       <Text style={[styles.roomText, {color: statusColor}]}>
         {roomCode} - {roomTypeCode}
       </Text>
-      <Text style={styles.statusText}>{noofGuest}</Text>
+      <Text style={styles.statusText}>
+        {' '}
+        {noofGuest ? `(${noofGuest})` : null}
+      </Text>
       <View style={styles.line}></View>
       <View style={styles.iconsContainer}>
-        {/* {icons.map((icon, index) => (
-          <Icon key={index} name={icon.name} size={30} color={icon.color} />
-        ))} */}
         <Image
           source={
             hkStatus === 'clean'

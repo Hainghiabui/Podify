@@ -149,7 +149,7 @@ const NoteModal: FC<Props> = ({visible, onClose}) => {
                 style={{width: 20, height: 20}}
               />
               <View style={{width: 8}}></View>
-              <Text style={styles.itemText}>Khóa phòng</Text>
+              <Text style={styles.itemText}>Phòng chờ check out</Text>
             </View>
           </ScrollView>
         </View>

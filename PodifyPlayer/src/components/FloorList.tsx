@@ -1,15 +1,13 @@
-import colors from '@utils/colors';
 import React, {useEffect, useState} from 'react';
 import {View, FlatList, Pressable, Text, StyleSheet} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from 'src/store';
-
 import Card from './Card';
 import axios from 'axios';
-import {FloorData, RoomData} from 'src/@type/building';
 import {setFloorData} from 'src/store/floorDataSlice';
-import {clearSelectedFloors, deleteItem} from 'src/store/selectedFloorsSlice';
+import {clearSelectedFloors} from 'src/store/selectedFloorsSlice';
+import colors from '@utils/colors';
 
 interface Room {
   floor: string;
@@ -32,13 +30,17 @@ interface Floor {
   name: string;
   roomsOfFloor: number;
 }
+
 type GroupedData = {
   [floor: string]: string[];
 };
-interface Props {}
 
-const FloorList: React.FC<Props> = () => {
+const FloorList: React.FC = () => {
   const [loading, setLoading] = useState(true);
+  const [expandedFloors, setExpandedFloors] = useState<Record<string, boolean>>(
+    {},
+  );
+
   const floorData = useSelector(
     (state: RootState) => state.floorData.floorData,
   );
@@ -52,7 +54,7 @@ const FloorList: React.FC<Props> = () => {
       .post(
         'https://api-gateway-test.apecgroup.net/api/cm/pms/hk/get-room-view',
         {
-          buildingCode: `${selectedBuilding.value}`,
+          buildingCode: selectedBuilding.value || '',
           floorCode: '',
           dateRoom: '',
           roomCode: '',
@@ -87,7 +89,7 @@ const FloorList: React.FC<Props> = () => {
         console.error(error);
         setLoading(false);
       });
-  }, []);
+  }, [selectedBuilding.value, dispatch]);
 
   const extractNumber = (text: string) => {
     return text.replace(/^\D+/g, '');
@@ -96,30 +98,10 @@ const FloorList: React.FC<Props> = () => {
   const selectedFloors = useSelector(
     (state: RootState) => state.selectedFloors.selectedFloors,
   );
-
   const listFloors = selectedFloors.map(floor => floor.text);
-
   const filteredData = floorData.filter(floorData =>
     listFloors.includes(floorData.floor),
   );
-
-  const sortedFloors = listFloors
-    .map(floorText => ({
-      original: floorText,
-      number: parseInt(extractNumber(floorText), 10),
-    }))
-    .sort((a, b) => a.number - b.number)
-    .map(item => item.original);
-
-  const roomsOfFloor = filteredData.map(filteredData => ({
-    floor: filteredData.floor,
-    size: filteredData.data.length,
-  }));
-
-  const getSizeByFloor = (floor: string): number | undefined => {
-    const floorData = roomsOfFloor.find(f => f.floor === floor);
-    return floorData?.size;
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -149,7 +131,12 @@ const FloorList: React.FC<Props> = () => {
     }
   };
 
-  const toggleRoomList = () => {};
+  const toggleRoomList = (floor: string) => {
+    setExpandedFloors(prevState => ({
+      ...prevState,
+      [floor]: !prevState[floor],
+    }));
+  };
 
   return (
     <View style={styles.container}>
@@ -162,35 +149,39 @@ const FloorList: React.FC<Props> = () => {
           const roomStatus = item.data.map(room => room.roomStatus);
           const noofGuest = item.data.map(room => room.noofGuest);
           const hkStatus = item.data.map(room => room.hkStatus);
-
           return (
             <View>
               <View style={styles.floorItem}>
                 <Text style={[styles.btnText, {fontWeight: 'bold'}]}>
                   Tầng {extractNumber(item.floor)}
                 </Text>
-                <Pressable>
+                <Pressable onPress={() => toggleRoomList(item.floor)}>
                   <MaterialIcons
-                    name="keyboard-arrow-down"
+                    name={
+                      expandedFloors[item.floor]
+                        ? 'keyboard-arrow-up'
+                        : 'keyboard-arrow-down'
+                    }
                     size={20}
                     color={colors.DARKEST}
-                    onPress={() => toggleRoomList()}
                   />
                 </Pressable>
               </View>
-              <View style={styles.roomGrid}>
-                {roomCodes.length > 0 &&
-                  roomCodes.map((roomCode, index) => (
-                    <Card
-                      key={index}
-                      roomCode={roomCode}
-                      roomTypeCode={roomTypeCodes[index]}
-                      noofGuest={noofGuest[index]}
-                      hkStatus={getHKStatus(hkStatus[index])}
-                      statusColor={getStatusColor(roomStatus[index])}
-                    />
-                  ))}
-              </View>
+              {expandedFloors[item.floor] && (
+                <View style={styles.roomGrid}>
+                  {roomCodes.length > 0 &&
+                    roomCodes.map((roomCode, index) => (
+                      <Card
+                        key={roomCode}
+                        roomCode={roomCode}
+                        roomTypeCode={roomTypeCodes[index]}
+                        noofGuest={noofGuest[index]}
+                        hkStatus={getHKStatus(hkStatus[index])}
+                        statusColor={getStatusColor(roomStatus[index])}
+                      />
+                    ))}
+                </View>
+              )}
             </View>
           );
         }}
@@ -215,7 +206,6 @@ const styles = StyleSheet.create({
     borderColor: colors.GRAYLIGHT,
   },
   btnText: {color: '#000', fontSize: 14},
-  floorContainer: {},
   roomGrid: {
     flex: 1,
     flexDirection: 'row',
