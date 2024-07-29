@@ -2,11 +2,14 @@ import colors from '@utils/colors';
 import React, {useEffect, useState} from 'react';
 import {View, FlatList, Pressable, Text, StyleSheet} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from 'src/store';
-import RoomGrid from './RoomGrid';
+
 import Card from './Card';
 import axios from 'axios';
+import {FloorData, RoomData} from 'src/@type/building';
+import {setFloorData} from 'src/store/floorDataSlice';
+import {clearSelectedFloors, deleteItem} from 'src/store/selectedFloorsSlice';
 
 interface Room {
   floor: string;
@@ -26,22 +29,30 @@ interface Room {
 }
 
 interface Floor {
-  floor: string;
-  data: Room[];
+  name: string;
+  roomsOfFloor: number;
 }
-
+type GroupedData = {
+  [floor: string]: string[];
+};
 interface Props {}
 
 const FloorList: React.FC<Props> = () => {
-  const [floors, setFloors] = useState<Floor[]>([]);
   const [loading, setLoading] = useState(true);
+  const floorData = useSelector(
+    (state: RootState) => state.floorData.floorData,
+  );
+  const selectedBuilding = useSelector(
+    (state: RootState) => state.selectedBuilding.selectedBuilding,
+  );
+  const dispatch = useDispatch();
 
   useEffect(() => {
     axios
       .post(
         'https://api-gateway-test.apecgroup.net/api/cm/pms/hk/get-room-view',
         {
-          buildingCode: 'DIAMOND',
+          buildingCode: `${selectedBuilding.value}`,
           floorCode: '',
           dateRoom: '',
           roomCode: '',
@@ -65,25 +76,32 @@ const FloorList: React.FC<Props> = () => {
           response.data.statusCode === 200 &&
           response.data.message === 'Success'
         ) {
-          setFloors(response.data.metadata);
+          dispatch(clearSelectedFloors());
+          dispatch(setFloorData(response.data.metadata));
         } else {
           console.error('Error fetching data');
         }
         setLoading(false);
       })
       .catch(error => {
-        console.error('Error fetching data:', error);
+        console.error(error);
         setLoading(false);
       });
   }, []);
+
   const extractNumber = (text: string) => {
     return text.replace(/^\D+/g, '');
   };
+
   const selectedFloors = useSelector(
     (state: RootState) => state.selectedFloors.selectedFloors,
   );
 
   const listFloors = selectedFloors.map(floor => floor.text);
+
+  const filteredData = floorData.filter(floorData =>
+    listFloors.includes(floorData.floor),
+  );
 
   const sortedFloors = listFloors
     .map(floorText => ({
@@ -93,21 +111,63 @@ const FloorList: React.FC<Props> = () => {
     .sort((a, b) => a.number - b.number)
     .map(item => item.original);
 
+  const roomsOfFloor = filteredData.map(filteredData => ({
+    floor: filteredData.floor,
+    size: filteredData.data.length,
+  }));
+
+  const getSizeByFloor = (floor: string): number | undefined => {
+    const floorData = roomsOfFloor.find(f => f.floor === floor);
+    return floorData?.size;
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'VC':
+        return colors.BLUE;
+      case 'OP':
+        return colors.YELLOW;
+      case 'RS':
+        return colors.GREEN;
+      default:
+        return colors.GRAY;
+    }
+  };
+
+  const getHKStatus = (status: string) => {
+    switch (status) {
+      case 'C':
+        return 'clean';
+      case 'I':
+        return 'inspected';
+      case 'D':
+        return 'dirty';
+      case 'PU':
+        return 'pickup';
+      default:
+        return '';
+    }
+  };
+
   const toggleRoomList = () => {};
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <Text>Loading...</Text>
-      ) : (
-        <FlatList
-          data={sortedFloors}
-          keyExtractor={item => item.toString()}
-          renderItem={({item}) => (
+      <FlatList
+        data={filteredData}
+        keyExtractor={item => item.floor.toString()}
+        renderItem={({item}) => {
+          const roomCodes = item.data.map(room => room.roomCode);
+          const roomTypeCodes = item.data.map(room => room.roomTypeCode);
+          const roomStatus = item.data.map(room => room.roomStatus);
+          const noofGuest = item.data.map(room => room.noofGuest);
+          const hkStatus = item.data.map(room => room.hkStatus);
+
+          return (
             <View>
               <View style={styles.floorItem}>
                 <Text style={[styles.btnText, {fontWeight: 'bold'}]}>
-                  Tầng {extractNumber(item)}
+                  Tầng {extractNumber(item.floor)}
                 </Text>
                 <Pressable>
                   <MaterialIcons
@@ -118,17 +178,30 @@ const FloorList: React.FC<Props> = () => {
                   />
                 </Pressable>
               </View>
-              <RoomGrid />
+              <View style={styles.roomGrid}>
+                {roomCodes.length > 0 &&
+                  roomCodes.map((roomCode, index) => (
+                    <Card
+                      key={index}
+                      roomCode={roomCode}
+                      roomTypeCode={roomTypeCodes[index]}
+                      noofGuest={noofGuest[index]}
+                      hkStatus={getHKStatus(hkStatus[index])}
+                      statusColor={getStatusColor(roomStatus[index])}
+                    />
+                  ))}
+              </View>
             </View>
-          )}
-        />
-      )}
+          );
+        }}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     marginTop: 10,
     backgroundColor: colors.PRIMARY,
   },
@@ -143,6 +216,12 @@ const styles = StyleSheet.create({
   },
   btnText: {color: '#000', fontSize: 14},
   floorContainer: {},
+  roomGrid: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    padding: 10,
+  },
 });
 
 export default FloorList;

@@ -1,40 +1,61 @@
 import colors from '@utils/colors';
 import {FC} from 'react';
-import {View, Text, StyleSheet} from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import {View, Text, StyleSheet, Image} from 'react-native';
 
 interface IconProps {
   name: string;
   color: string;
 }
 interface Props {
-  icons: IconProps[];
+  // icons: IconProps[];
+  roomCode: string;
+  roomTypeCode: string;
+  statusColor: string;
+  noofGuest: number | null;
+  hkStatus: string;
 }
-const Card: FC<Props> = ({icons}) => {
+
+const Card: FC<Props> = props => {
+  const {roomCode, roomTypeCode, statusColor, noofGuest, hkStatus} = props;
   return (
-    <View style={[styles.card, {borderBottomColor: 'red'}]}>
-      <Text style={[styles.roomText, {color: 'red'}]}>room</Text>
-      <Text style={styles.statusText}>(02)</Text>
+    <View style={[styles.card, {borderBottomColor: statusColor}]}>
+      <Text style={[styles.roomText, {color: statusColor}]}>
+        {roomCode} - {roomTypeCode}
+      </Text>
+      <Text style={styles.statusText}>{noofGuest}</Text>
+      <View style={styles.line}></View>
       <View style={styles.iconsContainer}>
-        {icons.map((icon, index) => (
+        {/* {icons.map((icon, index) => (
           <Icon key={index} name={icon.name} size={30} color={icon.color} />
-        ))}
+        ))} */}
+        <Image
+          source={
+            hkStatus === 'clean'
+              ? require('../assets/clean.png')
+              : hkStatus === 'dirty'
+              ? require('../assets/dirty.png')
+              : hkStatus === 'pickup'
+              ? require('../assets/pickup.png')
+              : require('../assets/inspected.png')
+          }
+          style={{width: 20, height: 20, marginRight: 8}}
+        />
       </View>
     </View>
   );
 };
 const styles = StyleSheet.create({
   card: {
-    width: '26%',
+    width: '28%',
     borderBottomWidth: 8,
     backgroundColor: colors.WHITE,
     borderRadius: 10,
-    padding: 10,
-    margin: 12,
+    padding: 8,
+    margin: 10,
     alignItems: 'center',
   },
   roomText: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   statusText: {
@@ -42,7 +63,13 @@ const styles = StyleSheet.create({
   },
   iconsContainer: {
     flexDirection: 'row',
-    marginTop: 10,
+    // marginTop: 10,
+  },
+  line: {
+    width: '100%',
+    height: 1,
+    backgroundColor: colors.GRAYLIGHT,
+    marginVertical: 8,
   },
 });
 

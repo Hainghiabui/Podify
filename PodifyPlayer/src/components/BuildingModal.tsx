@@ -12,6 +12,10 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import Feather from 'react-native-vector-icons/Feather';
 import colors from '@utils/colors';
 import AppButton from './AppButton';
+import {useDispatch, useSelector} from 'react-redux';
+import {RootState} from 'src/store';
+import {setSelectedBuildingValue} from 'src/store/selectedBuildingSlice';
+import {clearSelectedFloors} from 'src/store/selectedFloorsSlice';
 
 interface Building {
   id: number;
@@ -23,24 +27,27 @@ interface Props {
   visible: boolean;
   buildings: Building[];
   onClose: () => void;
-  onSelect: (building: Building) => void;
 }
 
-const BuildingModal: React.FC<Props> = ({
-  visible,
-  buildings,
-  onClose,
-  onSelect,
-}) => {
-  const [selectedBuildingId, setSelectedBuildingId] = useState<number | null>(
-    null,
+const BuildingModal: React.FC<Props> = ({visible, buildings, onClose}) => {
+  const [selectedBuildingId, setSelectedBuildingId] = useState<number>(0);
+  const [selectBuildingValue, setSelectBuildingValue] = useState<string>('');
+
+  const selectedBuilding = useSelector(
+    (state: RootState) => state.selectedBuilding.selectedBuilding,
   );
+  const dispatch = useDispatch();
 
   const handleSelectBuilding = (building: Building) => {
     setSelectedBuildingId(building.id);
-    onSelect(building);
+    setSelectBuildingValue(building.value);
   };
 
+  const handleSubmitBuilding = () => {
+    dispatch(setSelectedBuildingValue(selectBuildingValue));
+    dispatch(clearSelectedFloors());
+    onClose();
+  };
   return (
     <Modal
       visible={visible}
@@ -53,9 +60,7 @@ const BuildingModal: React.FC<Props> = ({
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Chọn tòa nhà</Text>
-                <TouchableOpacity
-                  style={styles.modalCloseButton}
-                  onPress={onClose}>
+                <TouchableOpacity style={styles.modalCloseButton}>
                   <AntDesign name="close" size={24} color={colors.DARKEST} />
                 </TouchableOpacity>
               </View>
@@ -75,7 +80,7 @@ const BuildingModal: React.FC<Props> = ({
                     ]}
                     onPress={() => handleSelectBuilding(item)}>
                     <Text style={styles.itemText}>
-                      {item.value?.charAt(0)} - {item.value}
+                      {item.value.charAt(0)} - {item.value}
                     </Text>
                     {item.id === selectedBuildingId && (
                       <Feather
@@ -88,7 +93,10 @@ const BuildingModal: React.FC<Props> = ({
                   </TouchableOpacity>
                 )}
               />
-              <AppButton title="Xác nhận" onPress={onClose} />
+              <AppButton
+                title="Xác nhận"
+                onPress={() => handleSubmitBuilding()}
+              />
             </View>
           </TouchableWithoutFeedback>
         </View>

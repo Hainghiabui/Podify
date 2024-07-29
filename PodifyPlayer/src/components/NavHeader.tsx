@@ -8,15 +8,14 @@ import colors from '@utils/colors';
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from 'src/store';
 import {deleteItem} from 'src/store/selectedFloorsSlice';
+import NoteModal from './NoteModal';
 
 const NavHeader = ({
-  selectedBuilding,
   selectBuilding,
   selectFloor,
   extractNumber,
   deleteAll,
 }: {
-  selectedBuilding: string | null;
   deleteAll: () => void;
 
   selectBuilding: () => void;
@@ -24,6 +23,7 @@ const NavHeader = ({
   extractNumber: (text: string) => string;
 }) => {
   const dispatch = useDispatch();
+  const [noteModalVisible, setNoteModalVisible] = React.useState(false);
 
   const handleDeleteItem = (floor: string) => {
     dispatch(deleteItem(floor));
@@ -41,6 +41,10 @@ const NavHeader = ({
     }))
     .sort((a, b) => a.number - b.number)
     .map(item => item.original);
+
+  const selectedBuilding = useSelector(
+    (state: RootState) => state.selectedBuilding.selectedBuilding,
+  );
 
   return (
     <View style={styles.navHeader}>
@@ -70,6 +74,7 @@ const NavHeader = ({
             name="checkbox-blank-badge-outline"
             size={24}
             color={colors.DARKEST}
+            onPress={() => setNoteModalVisible(true)}
           />
           <View>
             <MaterialCommunityIcons
@@ -101,7 +106,7 @@ const NavHeader = ({
           />
           <Text
             style={{fontWeight: 'bold', color: colors.DARKEST, fontSize: 14}}>
-            {selectedBuilding?.charAt(0)}
+            {selectedBuilding.value.charAt(0)}
           </Text>
           <Pressable onPress={selectBuilding}>
             <MaterialIcons
@@ -167,6 +172,10 @@ const NavHeader = ({
           />
         </View>
       </View>
+      <NoteModal
+        visible={noteModalVisible}
+        onClose={() => setNoteModalVisible(false)}
+      />
     </View>
   );
 };

@@ -81,7 +81,7 @@ const CustomerOrder = () => {
               <View key={room.id} style={styles.roomContainer}>
                 <Text>ID: {room.id}</Text>
                 <Text>Room Code: {room.roomCode}</Text>
-                {/* <Text>Room Type Code: {room.roomTypeCode}</Text>
+                <Text>Room Type Code: {room.roomTypeCode}</Text>
                 <Text>Block By: {room.blockBy}</Text>
                 <Text>Block Remark: {room.blockRemark}</Text>
                 <Text>Block Status: {room.blockStatus}</Text>
@@ -91,7 +91,7 @@ const CustomerOrder = () => {
                 <Text>Number of Guests: {room.noofGuest}</Text>
                 <Text>Is Back to Back: {room.isBackToBack}</Text>
                 <Text>Guest Status: {room.guestStatus}</Text>
-                <Text>Room Type Name: {room.roomTypeName}</Text> */}
+                <Text>Room Type Name: {room.roomTypeName}</Text>
               </View>
             ))}
           </View>

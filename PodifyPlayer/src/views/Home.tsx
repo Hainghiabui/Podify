@@ -13,9 +13,9 @@ import FloorModal from '../components/FloorModal';
 import FloorList from '../components/FloorList';
 import axios from 'axios';
 import colors from '@utils/colors';
+import {setSelectedBuildingValue} from 'src/store/selectedBuildingSlice';
 
 const Home: React.FC = () => {
-  const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   const [buildingModalVisible, setBuildingModalVisible] =
     useState<boolean>(false);
   const [floorModalVisible, setFloorModalVisible] = useState<boolean>(false);
@@ -27,14 +27,6 @@ const Home: React.FC = () => {
   const selectedFloors = useSelector(
     (state: RootState) => state.selectedFloors.selectedFloors,
   );
-
-  const selectBuilding = (building: {
-    id: number;
-    text: string;
-    value: string;
-  }) => {
-    setSelectedBuilding(building.value);
-  };
 
   const extractNumber = (text: string) => text.replace(/^\D+/g, '');
 
@@ -51,6 +43,10 @@ const Home: React.FC = () => {
     );
     setFloorModalVisible(false);
   };
+
+  const selectedBuilding = useSelector(
+    (state: RootState) => state.selectedBuilding.selectedBuilding,
+  );
 
   useEffect(() => {
     axios
@@ -80,7 +76,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     axios
       .get(
-        'https://sh-dev.qcloud.asia/booking/api/hk/get-floorcode-room-view?buildingCode=DIAMOND',
+        `https://sh-dev.qcloud.asia/booking/api/hk/get-floorcode-room-view?buildingCode=${selectedBuilding.value}`,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -92,7 +88,9 @@ const Home: React.FC = () => {
           response.data.statusCode === 200 &&
           response.data.message === 'Success'
         ) {
+          dispatch(clearSelectedFloors());
           setFloors(response.data.metadata);
+          console.log(selectedBuilding.value);
         } else {
           console.error('Error fetching data');
         }
@@ -102,7 +100,7 @@ const Home: React.FC = () => {
         console.error(error);
         setLoading(false);
       });
-  }, []);
+  }, [selectedBuilding.value]);
 
   const handleDeleteAll = () => {
     dispatch(clearSelectedFloors());
@@ -119,8 +117,9 @@ const Home: React.FC = () => {
   return (
     <View style={styles.container}>
       <NavHeader
-        selectedBuilding={selectedBuilding}
-        selectBuilding={() => setBuildingModalVisible(true)}
+        selectBuilding={() => {
+          setBuildingModalVisible(true);
+        }}
         selectFloor={() => setFloorModalVisible(true)}
         extractNumber={text => text.replace(/^\D+/g, '')}
         deleteAll={() => handleDeleteAll()}
@@ -129,7 +128,6 @@ const Home: React.FC = () => {
         visible={buildingModalVisible}
         buildings={buildings}
         onClose={() => setBuildingModalVisible(false)}
-        onSelect={selectBuilding}
       />
       <FloorModal
         visible={floorModalVisible}
@@ -143,7 +141,7 @@ const Home: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: colors.PRIMARY, paddingBottom: 30},
+  container: {flex: 1, backgroundColor: colors.PRIMARY},
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
