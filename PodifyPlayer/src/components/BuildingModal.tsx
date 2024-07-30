@@ -93,6 +93,7 @@ const BuildingModal: React.FC<Props> = ({visible, buildings, onClose}) => {
                   </TouchableOpacity>
                 )}
               />
+              <View style={{height: 16}} />
               <AppButton
                 title="Xác nhận"
                 onPress={() => handleSubmitBuilding()}

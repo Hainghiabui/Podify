@@ -54,7 +54,7 @@ const FloorList: React.FC = () => {
       .post(
         'https://api-gateway-test.apecgroup.net/api/cm/pms/hk/get-room-view',
         {
-          buildingCode: selectedBuilding.value || '',
+          buildingCode: '',
           floorCode: '',
           dateRoom: '',
           roomCode: '',

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {View, Text, Image, Pressable, StyleSheet, FlatList} from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -9,6 +9,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from 'src/store';
 import {deleteItem} from 'src/store/selectedFloorsSlice';
 import NoteModal from './NoteModal';
+import FilterModal from './FilterModal';
 
 const NavHeader = ({
   selectBuilding,
@@ -24,6 +25,7 @@ const NavHeader = ({
 }) => {
   const dispatch = useDispatch();
   const [noteModalVisible, setNoteModalVisible] = React.useState(false);
+  const [isModalVisible, setModalVisible] = useState(false);
 
   const handleDeleteItem = (floor: string) => {
     dispatch(deleteItem(floor));
@@ -76,7 +78,7 @@ const NavHeader = ({
             color={colors.DARKEST}
             onPress={() => setNoteModalVisible(true)}
           />
-          <View>
+          <Pressable onPress={() => setModalVisible(true)}>
             <MaterialCommunityIcons
               name="filter-variant"
               size={24}
@@ -94,7 +96,7 @@ const NavHeader = ({
                 justifyContent: 'center',
                 alignItems: 'center',
               }}></View>
-          </View>
+          </Pressable>
         </View>
       </View>
       <View style={[styles.selectContainer, {justifyContent: 'space-between'}]}>
@@ -175,6 +177,10 @@ const NavHeader = ({
       <NoteModal
         visible={noteModalVisible}
         onClose={() => setNoteModalVisible(false)}
+      />
+      <FilterModal
+        visible={isModalVisible}
+        onClose={() => setModalVisible(false)}
       />
     </View>
   );

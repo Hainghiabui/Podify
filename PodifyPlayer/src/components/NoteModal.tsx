@@ -42,7 +42,7 @@ const NoteModal: FC<Props> = ({visible, onClose}) => {
               onPress={() => onClose()}
             />
           </View>
-          <ScrollView>
+          <View>
             <Text style={styles.sectionTitle}>
               1. Trạng thái dọn phòng của HK
             </Text>
@@ -151,7 +151,7 @@ const NoteModal: FC<Props> = ({visible, onClose}) => {
               <View style={{width: 8}}></View>
               <Text style={styles.itemText}>Phòng chờ check out</Text>
             </View>
-          </ScrollView>
+          </View>
         </View>
       </Modal>
     </View>

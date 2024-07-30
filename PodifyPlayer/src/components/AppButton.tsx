@@ -22,7 +22,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.GREEN,
     paddingVertical: 12,
     borderRadius: 4,
-    marginVertical: 16,
   },
   btnTitle: {
     color: colors.WHITE,

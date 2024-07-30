@@ -30,7 +30,7 @@ interface Props {
   onSelect: (selectedFloors: Floor[]) => void;
 }
 
-const FloorModal: React.FC<Props> = ({visible, floors, onClose}) => {
+const FloorModal: React.FC<Props> = ({visible, floors, onClose}: Props) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const dispatch = useDispatch();
   const selectedFloors = useSelector(
@@ -87,7 +87,6 @@ const FloorModal: React.FC<Props> = ({visible, floors, onClose}) => {
           keyExtractor={item => item.id.toString()}
           renderItem={({item}) => {
             const title = `Tầng ${extractNumber(item.text)}`;
-
             const isSelected = selectedFloors.some(
               floor => floor.id === item.id,
             );
@@ -102,6 +101,7 @@ const FloorModal: React.FC<Props> = ({visible, floors, onClose}) => {
           contentContainerStyle={styles.floorsContainer}
           numColumns={3}
         />
+        <View style={{height: 16}} />
         <AppButton title="Tiếp tục" onPress={handleSubmit} />
       </View>
     </Modal>
@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     backgroundColor: colors.WHITE,
-    padding: 10,
     flex: 1,
   },
   floorsContainer: {

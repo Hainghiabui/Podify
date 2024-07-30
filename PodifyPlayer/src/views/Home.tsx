@@ -20,6 +20,7 @@ const Home: React.FC = () => {
   const [buildingModalVisible, setBuildingModalVisible] =
     useState<boolean>(false);
   const [floorModalVisible, setFloorModalVisible] = useState<boolean>(false);
+
   const [buildings, setBuildings] = useState([]);
   const [loading, setLoading] = useState(true);
 
