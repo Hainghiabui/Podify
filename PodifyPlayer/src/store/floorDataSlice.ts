@@ -2,6 +2,7 @@ import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {Room} from 'src/@type/building';
 
 interface FloorData {
+  roomCode: string;
   floor: string;
   data: Room[];
 }

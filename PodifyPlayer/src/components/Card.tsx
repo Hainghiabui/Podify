@@ -1,6 +1,6 @@
 import colors from '@utils/colors';
 import {FC} from 'react';
-import {View, Text, StyleSheet, Image} from 'react-native';
+import {View, Text, StyleSheet, Image, Pressable} from 'react-native';
 
 interface IconProps {
   name: string;
@@ -9,15 +9,27 @@ interface IconProps {
 interface Props {
   roomCode: string;
   roomTypeCode: string;
+  roomId: number;
   statusColor: string;
   noofGuest: number | null;
   hkStatus: string;
+  onPress: () => void;
 }
 
 const Card: FC<Props> = props => {
-  const {roomCode, roomTypeCode, statusColor, noofGuest, hkStatus} = props;
+  const {
+    roomCode,
+    roomTypeCode,
+    statusColor,
+    noofGuest,
+    hkStatus,
+    roomId,
+    onPress,
+  } = props;
   return (
-    <View style={[styles.card, {borderBottomColor: statusColor}]}>
+    <Pressable
+      style={[styles.card, {borderBottomColor: statusColor}]}
+      onPress={onPress}>
       <Text style={[styles.roomText, {color: statusColor}]}>
         {roomCode} - {roomTypeCode}
       </Text>
@@ -29,18 +41,18 @@ const Card: FC<Props> = props => {
       <View style={styles.iconsContainer}>
         <Image
           source={
-            hkStatus === 'clean'
+            hkStatus === 'CLEAN'
               ? require('../assets/clean.png')
-              : hkStatus === 'dirty'
+              : hkStatus === 'DIRTY'
               ? require('../assets/dirty.png')
-              : hkStatus === 'pickup'
+              : hkStatus === 'PICK-UP'
               ? require('../assets/pickup.png')
               : require('../assets/inspected.png')
           }
           style={{width: 20, height: 20, marginRight: 8}}
         />
       </View>
-    </View>
+    </Pressable>
   );
 };
 const styles = StyleSheet.create({

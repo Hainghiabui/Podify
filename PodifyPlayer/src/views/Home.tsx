@@ -1,6 +1,11 @@
-// screens/Home.tsx
 import React, {useEffect, useState} from 'react';
-import {View, StyleSheet, Modal, ActivityIndicator} from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  FlatList,
+  RefreshControl,
+} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import {RootState} from '../store';
 import {
@@ -12,22 +17,48 @@ import NavHeader from '../components/NavHeader';
 import BuildingModal from '../components/BuildingModal';
 import FloorModal from '../components/FloorModal';
 import FloorList from '../components/FloorList';
-import axios from 'axios';
 import colors from '@utils/colors';
-import {setSelectedBuildingValue} from 'src/store/selectedBuildingSlice';
+import {fetchBuildings, fetchFloors} from 'src/api/fetchBuildings';
+import {useQuery} from 'react-query';
 
 const Home: React.FC = () => {
   const [buildingModalVisible, setBuildingModalVisible] =
     useState<boolean>(false);
   const [floorModalVisible, setFloorModalVisible] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [buildings, setBuildings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: buildingsData,
+    error: buildingsError,
+    isLoading: buildingsLoading,
+    refetch: refetchBuildings,
+  } = useQuery('buildings', fetchBuildings);
+
+  const selectedBuilding = useSelector(
+    (state: RootState) => state.selectedBuilding.selectedBuilding,
+  );
+
+  const {
+    data: floorsData,
+    error: floorsError,
+    isLoading: floorsLoading,
+    refetch: refetchFloors,
+  } = useQuery(
+    ['floors', selectedBuilding.value],
+    () => fetchFloors(selectedBuilding.value),
+    {
+      enabled: !!selectedBuilding.value,
+      onSuccess: data => {
+        dispatch(clearSelectedFloors());
+        dispatch(setFloors(data));
+      },
+      onError: () => {
+        console.error('Error fetching data');
+      },
+    },
+  );
 
   const dispatch = useDispatch();
-  const selectedFloors = useSelector(
-    (state: RootState) => state.selectedFloors.selectedFloors,
-  );
 
   const getFloors = useSelector(
     (state: RootState) => state.getFloors.getFloors,
@@ -49,98 +80,62 @@ const Home: React.FC = () => {
     setFloorModalVisible(false);
   };
 
-  const selectedBuilding = useSelector(
-    (state: RootState) => state.selectedBuilding.selectedBuilding,
-  );
-
-  useEffect(() => {
-    axios
-      .get('https://sh-dev.qcloud.asia/booking/api/hk/get-building', {
-        headers: {
-          'Content-Type': 'application/json',
-          Cookie: 'session_id=c2585eec3b4bd938bf0f45772e38c9205b772fb8',
-        },
-      })
-      .then(response => {
-        if (
-          response.data.statusCode === 200 &&
-          response.data.message === 'Success'
-        ) {
-          setBuildings(response.data.metadata);
-        } else {
-          console.error('Error fetching data');
-        }
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error(error);
-        setLoading(false);
-      });
-  }, []);
-
-  useEffect(() => {
-    if (!selectedBuilding.value) return;
-    axios
-      .get(
-        `https://sh-dev.qcloud.asia/booking/api/hk/get-floorcode-room-view?buildingCode=${selectedBuilding.value}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      )
-      .then(response => {
-        if (
-          response.data.statusCode === 200 &&
-          response.data.message === 'Success'
-        ) {
-          dispatch(clearSelectedFloors());
-          dispatch(setFloors(response.data.metadata));
-        } else {
-          console.error('Error fetching data');
-        }
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error(error);
-        setLoading(false);
-      });
-  }, [selectedBuilding.value, dispatch]);
-
   const handleDeleteAll = () => {
     dispatch(clearSelectedFloors());
   };
 
-  if (loading) {
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refetchBuildings();
+      await refetchFloors();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
+    setRefreshing(false);
+  };
+
+  if (buildingsLoading || floorsLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <NavHeader
-        selectBuilding={() => {
-          setBuildingModalVisible(true);
-        }}
-        selectFloor={() => setFloorModalVisible(true)}
-        extractNumber={text => text.replace(/^\D+/g, '')}
-        deleteAll={() => handleDeleteAll()}
+      <FlatList
+        data={[]}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={null}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListHeaderComponent={
+          <>
+            <NavHeader
+              selectBuilding={() => {
+                setBuildingModalVisible(true);
+              }}
+              selectFloor={() => setFloorModalVisible(true)}
+              extractNumber={text => text.replace(/^\D+/g, '')}
+              deleteAll={() => handleDeleteAll()}
+            />
+            <BuildingModal
+              visible={buildingModalVisible}
+              buildings={buildingsData}
+              onClose={() => setBuildingModalVisible(false)}
+            />
+            <FloorModal
+              visible={floorModalVisible}
+              floors={getFloors}
+              onClose={() => setFloorModalVisible(false)}
+            />
+          </>
+        }
+        ListFooterComponent={<FloorList />}
       />
-      <BuildingModal
-        visible={buildingModalVisible}
-        buildings={buildings}
-        onClose={() => setBuildingModalVisible(false)}
-      />
-      <FloorModal
-        visible={floorModalVisible}
-        floors={getFloors}
-        onClose={() => setFloorModalVisible(false)}
-        onSelect={selectFloors}
-      />
-      <FloorList />
     </View>
   );
 };

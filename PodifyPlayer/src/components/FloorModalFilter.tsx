@@ -1,67 +1,68 @@
-import React, {useEffect, useState} from 'react';
+import colors from '@utils/colors';
+import {FC, useEffect, useState} from 'react';
 import {
   View,
   Text,
-  FlatList,
-  TouchableOpacity,
   StyleSheet,
+  TouchableOpacity,
   TextInput,
+  FlatList,
 } from 'react-native';
-import Modal from 'react-native-modal';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import colors from '@utils/colors';
-import SelectButton from '@ui/SelectButton';
 import AppButton from './AppButton';
-import {useDispatch, useSelector} from 'react-redux';
-import {RootState} from '../store';
-import {setSelectedFloors} from '../store/selectedFloorsSlice';
+import Modal from 'react-native-modal';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import {useQuery} from 'react-query';
+import {fetchFloors} from 'src/api/fetchBuildings';
+import SelectButton from '@ui/SelectButton';
+import {useDispatch} from 'react-redux';
+import {setFilterFloor} from 'src/store/filterFloorSlice';
 
+interface Props {
+  visible: boolean;
+  building: string;
+  onClose: () => void;
+}
 interface Floor {
   id: number;
   text: string;
   value: string;
 }
 
-interface Props {
-  visible: boolean;
-  floors: Floor[];
-  onClose: () => void;
-}
-
-const FloorModal: React.FC<Props> = ({visible, floors, onClose}) => {
+const FloorModalFilter: FC<Props> = ({visible, building, onClose}) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [listSelectedFloors, setListSelectedFloors] = useState<Floor[]>([]);
+  const [filterFloors, setFilterFloors] = useState<Floor[]>([]);
+  const [listFilterFloor, setListFilterFloor] = useState<Floor[]>([]);
   const dispatch = useDispatch();
-  const selectedFloors = useSelector(
-    (state: RootState) => state.selectedFloors.selectedFloors,
+  const {data: floorsData} = useQuery(
+    ['floors', building],
+    () => fetchFloors(building),
+    {
+      enabled: !!building,
+      onSuccess: data => {
+        setFilterFloors(data);
+      },
+    },
   );
 
-  useEffect(() => {
-    setListSelectedFloors(selectedFloors);
-  }, [selectedFloors]);
-
-  const handleToggleSelect = (floor: Floor) => {
-    const isSelected = listSelectedFloors.some(
-      selected => selected.id === floor.id,
-    );
-    const newSelectedFloors = isSelected
-      ? listSelectedFloors.filter(selected => selected.id !== floor.id)
-      : [...listSelectedFloors, floor];
-    setListSelectedFloors(newSelectedFloors);
-  };
-
+  const filteredFloors = filterFloors.filter(floor =>
+    floor.text.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+  const extractNumber = (text: string) => text.replace(/^\D+/g, '');
   const handleSubmit = () => {
-    dispatch(setSelectedFloors(listSelectedFloors));
-
+    dispatch(setFilterFloor(listFilterFloor));
     onClose();
   };
 
-  const filteredFloors = floors.filter(floor =>
-    floor.text.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
-  const extractNumber = (text: string) => text.replace(/^\D+/g, '');
+  const handleToggleSelect = (floor: Floor) => {
+    const isSelected = listFilterFloor.some(
+      selected => selected.id === floor.id,
+    );
+    const newSelectedFloors = isSelected
+      ? listFilterFloor.filter(selected => selected.id !== floor.id)
+      : [...listFilterFloor, floor];
+    setListFilterFloor(newSelectedFloors);
+  };
 
   return (
     <Modal
@@ -101,7 +102,7 @@ const FloorModal: React.FC<Props> = ({visible, floors, onClose}) => {
           keyExtractor={item => item.id.toString()}
           renderItem={({item}) => {
             const title = `Tầng ${extractNumber(item.text)}`;
-            const isSelected = listSelectedFloors.some(
+            const isSelected = listFilterFloor.some(
               floor => floor.id === item.id,
             );
             return (
@@ -121,7 +122,6 @@ const FloorModal: React.FC<Props> = ({visible, floors, onClose}) => {
     </Modal>
   );
 };
-
 const styles = StyleSheet.create({
   modal: {
     justifyContent: 'flex-end',
@@ -165,4 +165,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FloorModal;
+export default FloorModalFilter;

@@ -1,107 +1,183 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {View, FlatList, Pressable, Text, StyleSheet} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import {useDispatch, useSelector} from 'react-redux';
 import {RootState} from 'src/store';
 import Card from './Card';
-import axios from 'axios';
 import {setFloorData} from 'src/store/floorDataSlice';
 import {clearSelectedFloors} from 'src/store/selectedFloorsSlice';
 import colors from '@utils/colors';
-
-interface Room {
-  floor: string;
-  id: number;
-  roomCode: string;
-  roomTypeCode: string;
-  blockBy: string | null;
-  blockRemark: string | null;
-  blockStatus: string | null;
-  hkStatus: string;
-  isBlocked: string;
-  roomStatus: string;
-  noofGuest: number | null;
-  isBackToBack: number;
-  guestStatus: string | null;
-  roomTypeName: string;
-}
-
-interface Floor {
-  name: string;
-  roomsOfFloor: number;
-}
-
-type GroupedData = {
-  [floor: string]: string[];
-};
+import {fetchRoomView} from 'src/api/fetchRooms';
+import {useQuery} from 'react-query';
+import RoomDetailModal from './RoomDetailModal';
+import {changeHkStatus} from 'src/api/changeHkStatus';
 
 const FloorList: React.FC = () => {
-  const [loading, setLoading] = useState(true);
   const [expandedFloors, setExpandedFloors] = useState<Record<string, boolean>>(
     {},
   );
+  const [roomDetailVisible, setRoomDetailVisible] = useState(false);
+  const [roomDetails, setRoomDetails] = useState({
+    roomCode: '',
+    roomId: 0,
+    roomTypeCode: '',
+    roomTypeName: '',
+    hkStatusData: '',
+    floor: '',
+  });
 
   const floorData = useSelector(
-    (state: RootState) => state.floorData.floorData,
+    (state: RootState) => state.floorData.floorData || [],
   );
   const selectedBuilding = useSelector(
-    (state: RootState) => state.selectedBuilding.selectedBuilding,
+    (state: RootState) => state.selectedBuilding.selectedBuilding || {},
   );
+  const filterFloor = useSelector(
+    (state: RootState) => state.filterFloors.filterFloors || [],
+  );
+  const filterRoom = useSelector(
+    (state: RootState) => state.filterRooms.filterRooms || [],
+  );
+  const filterRoomClass = useSelector(
+    (state: RootState) => state.filterRoomsClass.filterRoomsClass || [],
+  );
+  const filterBlockStatus = useSelector(
+    (state: RootState) => state.filterBlockStatus.filterBlockStatus || [],
+  );
+  const filterStatus = useSelector(
+    (state: RootState) => state.filterStatus.filterStatus || [],
+  );
+  const hkStatus = useSelector(
+    (state: RootState) => state.hkStatus.hkStatus || {},
+  );
+  const isFilter = useSelector(
+    (state: RootState) => state.filter.filter || false,
+  );
+
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    axios
-      .post(
-        'https://api-gateway-test.apecgroup.net/api/cm/pms/hk/get-room-view',
-        {
-          buildingCode: '',
-          floorCode: '',
-          dateRoom: '',
-          roomCode: '',
-          roomTypeCode: '',
-          blockStatus: '',
-          hkStatus: '',
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Cookie:
-              'session_id=c2585eec3b4bd938bf0f45772e38c9205b772fb8; session_id=c2585eec3b4bd938bf0f45772e38c9205b772fb8',
-            'X-Api-Key': '34c85b1f6df12f96c0034664c8b1f1f3',
-            HotelId: 26,
-            Server: 'HK',
-          },
-        },
-      )
-      .then(response => {
-        if (
-          response.data.statusCode === 200 &&
-          response.data.message === 'Success'
-        ) {
-          dispatch(clearSelectedFloors());
-          dispatch(setFloorData(response.data.metadata));
-        } else {
-          console.error('Error fetching data');
-        }
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error(error);
-        setLoading(false);
-      });
-  }, [selectedBuilding.value, dispatch]);
-
-  const extractNumber = (text: string) => {
-    return text.replace(/^\D+/g, '');
+  const roomViewParams = {
+    buildingCode: selectedBuilding.value || '',
+    floorCode: '',
+    dateRoom: '',
+    roomCode: '',
+    roomTypeCode: '',
+    blockStatus: '',
+    hkStatus: '',
   };
 
+  useQuery(
+    ['roomView', JSON.stringify(roomViewParams)],
+    () => fetchRoomView(JSON.stringify(roomViewParams)),
+    {
+      enabled: !!selectedBuilding.value,
+      onSuccess: data => {
+        dispatch(clearSelectedFloors());
+        dispatch(setFloorData(data));
+      },
+      onError: () => {
+        console.error('Error fetching data');
+      },
+    },
+  );
+
+  const dateNow = new Date().toLocaleDateString('en-US');
+
+  const hkStatusChangeParams = {
+    id: roomDetails.roomId,
+    roomCode: roomDetails.roomCode,
+    roomDate: dateNow,
+    hkStatus: hkStatus,
+    userName: 'admin',
+  };
+
+  console.log(hkStatusChangeParams);
+
+  const extractNumber = (text: string) => text.replace(/^\D+/g, '');
+
   const selectedFloors = useSelector(
-    (state: RootState) => state.selectedFloors.selectedFloors,
+    (state: RootState) => state.selectedFloors.selectedFloors || [],
   );
-  const listFloors = selectedFloors.map(floor => floor.text);
-  const filteredData = floorData.filter(floorData =>
-    listFloors.includes(floorData.floor),
+  const listFloors = selectedFloors.map(floor => floor.text || '');
+
+  const filterListFloors = filterFloor.map(floor => floor.text || '');
+  const filterListRooms = filterRoom.map(
+    room => room.roomCode?.toString() || '',
   );
+  const filterListRoomClasses = filterRoomClass.map(
+    roomClass => roomClass || '',
+  );
+  const filterListBlockStatus = filterBlockStatus.map(
+    blockStatus => blockStatus || '',
+  );
+  const filterListStatus = filterStatus.map(status => status || '');
+
+  const listRooms = floorData
+    .map(floor => (floor.data ? floor.data.map(room => room.roomCode) : []))
+    .flat();
+
+  const getConvertedHKStatus = (status: string) => {
+    switch (status) {
+      case 'CLEAN':
+        return 'C';
+      case 'INSPECTED':
+        return 'I';
+      case 'DIRTY':
+        return 'D';
+      case 'PICK-UP':
+        return 'PU';
+      default:
+        return '';
+    }
+  };
+
+  const filteredData = isFilter
+    ? floorData
+        .filter(
+          floorData =>
+            floorData.data &&
+            floorData.data.some(
+              room =>
+                (filterListRooms.length
+                  ? filterListRooms.includes(room.roomCode)
+                  : listRooms.includes(room.roomCode)) &&
+                (filterListRoomClasses.length
+                  ? filterListRoomClasses.includes(room.roomTypeCode)
+                  : true) &&
+                (filterListBlockStatus.length
+                  ? filterListBlockStatus.includes(room.blockStatus ?? '')
+                  : true) &&
+                (filterListStatus.length
+                  ? filterListStatus
+                      .map(getConvertedHKStatus)
+                      .includes(room.hkStatus as '' | 'C' | 'I' | 'D' | 'PU')
+                  : true),
+            ) &&
+            (filterListFloors.length
+              ? filterListFloors.includes(floorData.floor)
+              : true),
+        )
+        .map(floorData => ({
+          ...floorData,
+          data: floorData.data.filter(
+            room =>
+              (filterListRooms.length
+                ? filterListRooms.includes(room.roomCode)
+                : listRooms.includes(room.roomCode)) &&
+              (filterListRoomClasses.length
+                ? filterListRoomClasses.includes(room.roomTypeCode)
+                : true) &&
+              (filterListBlockStatus.length
+                ? filterListBlockStatus.includes(room.blockStatus ?? '')
+                : true) &&
+              (filterListStatus.length
+                ? filterListStatus
+                    .map(getConvertedHKStatus)
+                    .includes(room.hkStatus as '' | 'C' | 'I' | 'D' | 'PU')
+                : true),
+          ),
+        }))
+    : floorData.filter(floorData => listFloors.includes(floorData.floor));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -119,13 +195,13 @@ const FloorList: React.FC = () => {
   const getHKStatus = (status: string) => {
     switch (status) {
       case 'C':
-        return 'clean';
+        return 'CLEAN';
       case 'I':
-        return 'inspected';
+        return 'INSPECTED';
       case 'D':
-        return 'dirty';
+        return 'DIRTY';
       case 'PU':
-        return 'pickup';
+        return 'PICK-UP';
       default:
         return '';
     }
@@ -138,53 +214,90 @@ const FloorList: React.FC = () => {
     }));
   };
 
+  const handleDetail = (
+    roomCode: string,
+    roomTypeCode: string,
+    roomTypeName: string,
+    hkStatus: string,
+    floor: string,
+    roomId: string,
+  ) => {
+    setRoomDetails({
+      roomCode,
+      roomTypeCode,
+      roomTypeName,
+      hkStatusData: hkStatus,
+      floor,
+      roomId: Number(roomId),
+    });
+    setRoomDetailVisible(true);
+  };
+
+  const onClose = () => {
+    setRoomDetailVisible(false);
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
         data={filteredData}
         keyExtractor={item => item.floor.toString()}
-        renderItem={({item}) => {
-          const roomCodes = item.data.map(room => room.roomCode);
-          const roomTypeCodes = item.data.map(room => room.roomTypeCode);
-          const roomStatus = item.data.map(room => room.roomStatus);
-          const noofGuest = item.data.map(room => room.noofGuest);
-          const hkStatus = item.data.map(room => room.hkStatus);
-          return (
-            <View>
-              <View style={styles.floorItem}>
-                <Text style={[styles.btnText, {fontWeight: 'bold'}]}>
-                  Tầng {extractNumber(item.floor)}
-                </Text>
-                <Pressable onPress={() => toggleRoomList(item.floor)}>
-                  <MaterialIcons
-                    name={
-                      expandedFloors[item.floor]
-                        ? 'keyboard-arrow-up'
-                        : 'keyboard-arrow-down'
-                    }
-                    size={20}
-                    color={colors.DARKEST}
-                  />
-                </Pressable>
-              </View>
-              {expandedFloors[item.floor] && (
-                <View style={styles.roomGrid}>
-                  {roomCodes.length > 0 &&
-                    roomCodes.map((roomCode, index) => (
-                      <Card
-                        key={roomCode}
-                        roomCode={roomCode}
-                        roomTypeCode={roomTypeCodes[index]}
-                        noofGuest={noofGuest[index]}
-                        hkStatus={getHKStatus(hkStatus[index])}
-                        statusColor={getStatusColor(roomStatus[index])}
-                      />
-                    ))}
-                </View>
-              )}
+        renderItem={({item}) => (
+          <View>
+            <View style={styles.floorItem}>
+              <Text style={[styles.btnText, {fontWeight: 'bold'}]}>
+                Tầng {extractNumber(item.floor)}
+              </Text>
+              <Pressable onPress={() => toggleRoomList(item.floor)}>
+                <MaterialIcons
+                  name={
+                    expandedFloors[item.floor]
+                      ? 'keyboard-arrow-up'
+                      : 'keyboard-arrow-down'
+                  }
+                  size={20}
+                  color={colors.DARKEST}
+                />
+              </Pressable>
             </View>
-          );
-        }}
+            {expandedFloors[item.floor] && (
+              <View style={styles.roomGrid}>
+                {item.data &&
+                  item.data.map((room, index) => (
+                    <Card
+                      key={room.roomCode}
+                      roomCode={room.roomCode}
+                      roomTypeCode={room.roomTypeCode}
+                      noofGuest={room.noofGuest}
+                      hkStatus={getHKStatus(room.hkStatus)}
+                      statusColor={getStatusColor(room.roomStatus)}
+                      roomId={room.id}
+                      onPress={() =>
+                        handleDetail(
+                          room.roomCode,
+                          room.roomTypeCode,
+                          room.roomTypeName,
+                          getHKStatus(room.hkStatus),
+                          item.floor,
+                          room.id.toString(),
+                        )
+                      }
+                    />
+                  ))}
+              </View>
+            )}
+          </View>
+        )}
+      />
+      <RoomDetailModal
+        visible={roomDetailVisible}
+        floors={[]}
+        onClose={onClose}
+        roomCode={roomDetails.roomCode}
+        roomTypeCode={roomDetails.roomTypeCode}
+        roomTypeName={roomDetails.roomTypeName}
+        floor={roomDetails.floor}
+        hkStatusData={roomDetails.hkStatusData}
       />
     </View>
   );

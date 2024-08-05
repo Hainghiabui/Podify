@@ -28,5 +28,9 @@ export interface FloorData {
   data: Room[][];
   floor: string;
 }
+export interface HkStatus {
+  text: string;
+  value: string;
+}
 
 export type RoomData = FloorData[];

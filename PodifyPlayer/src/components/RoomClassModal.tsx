@@ -1,68 +1,58 @@
-import React, {useEffect, useState} from 'react';
+import colors from '@utils/colors';
+import {FC, useState} from 'react';
 import {
   View,
   Text,
+  StyleSheet,
   FlatList,
   TouchableOpacity,
-  StyleSheet,
   TextInput,
 } from 'react-native';
 import Modal from 'react-native-modal';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import colors from '@utils/colors';
-import SelectButton from '@ui/SelectButton';
+import {useQuery} from 'react-query';
+import {fetchRoomType} from 'src/api/fetchRooms';
 import AppButton from './AppButton';
-import {useDispatch, useSelector} from 'react-redux';
-import {RootState} from '../store';
-import {setSelectedFloors} from '../store/selectedFloorsSlice';
-
-interface Floor {
-  id: number;
-  text: string;
-  value: string;
-}
+import SelectButton from '@ui/SelectButton';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import {useDispatch} from 'react-redux';
+import {setFilterRoomsClass} from 'src/store/filterRoomsClassSlice';
 
 interface Props {
   visible: boolean;
-  floors: Floor[];
   onClose: () => void;
 }
-
-const FloorModal: React.FC<Props> = ({visible, floors, onClose}) => {
+const RoomClassModal: FC<Props> = ({visible, onClose}) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [listSelectedFloors, setListSelectedFloors] = useState<Floor[]>([]);
+  const [roomClasses, setRoomClasses] = useState<string[]>([]);
+  const [listRoomClasses, setListRoomClasses] = useState<string[]>([]);
   const dispatch = useDispatch();
-  const selectedFloors = useSelector(
-    (state: RootState) => state.selectedFloors.selectedFloors,
-  );
 
-  useEffect(() => {
-    setListSelectedFloors(selectedFloors);
-  }, [selectedFloors]);
-
-  const handleToggleSelect = (floor: Floor) => {
-    const isSelected = listSelectedFloors.some(
-      selected => selected.id === floor.id,
-    );
-    const newSelectedFloors = isSelected
-      ? listSelectedFloors.filter(selected => selected.id !== floor.id)
-      : [...listSelectedFloors, floor];
-    setListSelectedFloors(newSelectedFloors);
+  const handleToggleSelect = (roomClass: string) => {
+    const isSelected = listRoomClasses.some(selected => selected === roomClass);
+    const newSelectedRoomClasses = isSelected
+      ? listRoomClasses.filter(selected => selected !== roomClass)
+      : [...listRoomClasses, roomClass];
+    setListRoomClasses(newSelectedRoomClasses);
   };
-
+  const {data: roomClassesData} = useQuery(
+    ['roomClasses'],
+    () => fetchRoomType(),
+    {
+      enabled: true,
+      onSuccess: data => {
+        const roomClasses = data.map((item: {value: string}) => item.value);
+        setRoomClasses(roomClasses);
+      },
+    },
+  );
+  const filteredRoomClasses = roomClasses.filter(roomClass =>
+    roomClass.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
   const handleSubmit = () => {
-    dispatch(setSelectedFloors(listSelectedFloors));
-
+    dispatch(setFilterRoomsClass(listRoomClasses));
     onClose();
   };
-
-  const filteredFloors = floors.filter(floor =>
-    floor.text.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
-  const extractNumber = (text: string) => text.replace(/^\D+/g, '');
-
   return (
     <Modal
       isVisible={visible}
@@ -80,7 +70,7 @@ const FloorModal: React.FC<Props> = ({visible, floors, onClose}) => {
               color={colors.DARKEST}
               onPress={onClose}
             />
-            <Text style={styles.modalTitle}>Chọn tầng</Text>
+            <Text style={styles.modalTitle}>Chọn hạng phòng</Text>
           </View>
           <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
             <AntDesign name="close" size={24} color={colors.DARKEST} />
@@ -90,23 +80,19 @@ const FloorModal: React.FC<Props> = ({visible, floors, onClose}) => {
           <AntDesign name="search1" size={16} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm kiếm tầng"
-            keyboardType="numeric"
+            placeholder="Tìm kiếm hạng phòng"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
         <FlatList
-          data={filteredFloors}
-          keyExtractor={item => item.id.toString()}
+          data={searchQuery ? filteredRoomClasses : roomClasses}
+          keyExtractor={item => item.toString()}
           renderItem={({item}) => {
-            const title = `Tầng ${extractNumber(item.text)}`;
-            const isSelected = listSelectedFloors.some(
-              floor => floor.id === item.id,
-            );
+            const isSelected = listRoomClasses.some(floor => floor === item);
             return (
               <SelectButton
-                title={title}
+                title={item}
                 onPress={() => handleToggleSelect(item)}
                 isSelected={isSelected}
               />
@@ -165,4 +151,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FloorModal;
+export default RoomClassModal;
