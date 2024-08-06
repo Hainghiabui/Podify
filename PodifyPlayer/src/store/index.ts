@@ -10,6 +10,7 @@ import filterBlockStatusReducer from './filterBlockStatus';
 import hkStatusReducer from './hkStatusSlice';
 import filterStatus from './filterStatus';
 import filter from './filterSlice';
+import loading from './loading';
 
 const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ const store = configureStore({
     hkStatus: hkStatusReducer,
     filterStatus: filterStatus,
     filter: filter,
+    loading: loading,
   },
 });
 

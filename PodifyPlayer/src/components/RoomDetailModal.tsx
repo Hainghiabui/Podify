@@ -54,6 +54,7 @@ const RoomDetailModal: React.FC<Props> = ({
   const handleStatusButtonPress = (status: string, index: number) => {
     setStatusVisible(true);
     setSelectedStatus(status);
+
     setIndex(index);
   };
 
@@ -88,7 +89,6 @@ const RoomDetailModal: React.FC<Props> = ({
   };
 
   if (isLoading) return <Text>Loading...</Text>;
-  if (error) return <Text>Error fetching data</Text>;
 
   const getHkStatus = (status: string) => {
     switch (status) {
@@ -149,20 +149,36 @@ const RoomDetailModal: React.FC<Props> = ({
             <HkStatusButton
               key={index}
               color={
-                hkStatusData === status.text
+                (
+                  hkStatus
+                    ? getHkStatus(hkStatus) === status.text
+                    : hkStatusData === status.text
+                )
                   ? getStatusColorLight(status.text)
                   : getStatusColor(status.text)
               }
               title={status.text}
               lightColor={
-                hkStatusData === status.text
+                (
+                  hkStatus
+                    ? getHkStatus(hkStatus) === status.text
+                    : hkStatusData === status.text
+                )
                   ? getStatusColor(status.text)
                   : getStatusColorLight(status.text)
               }
               onPress={() => handleStatusButtonPress(status.text, index)}
-              isSelected={hkStatusData === status.text}
+              isSelected={
+                hkStatus
+                  ? getHkStatus(hkStatus) === status.text
+                  : hkStatusData === status.text
+              }
               textColor={
-                hkStatusData === status.text
+                (
+                  hkStatus
+                    ? getHkStatus(hkStatus) === status.text
+                    : hkStatusData === status.text
+                )
                   ? colors.WHITE
                   : getStatusColor(status.text)
               }

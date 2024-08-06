@@ -72,14 +72,31 @@ const StatusModal: React.FC<Props> = ({
         return '';
     }
   };
-  const handleReset = () => {};
+
+  const convertHkStatus = (status: string) => {
+    switch (status) {
+      case 'C':
+        return 'CLEAN';
+      case 'I':
+        return 'INSPECTED';
+      case 'D':
+        return 'DIRTY';
+      case 'PU':
+        return 'PICK-UP';
+      default:
+        return '';
+    }
+  };
+  const handleReset = () => {
+    onClose();
+  };
   const handleSubmit = () => {
     dispatch(setHkStatus(getHkStatus(hkStatusChange)));
     onClose();
   };
-  useEffect(() => {
-    handleSubmit();
-  }, [hkStatus]);
+  // useEffect(() => {
+  //   handleSubmit();
+  // }, [hkStatus]);
   return (
     <Modal
       isVisible={visible}
@@ -111,8 +128,11 @@ const StatusModal: React.FC<Props> = ({
             }}>
             Bạn có chắc chắn muốn đổi từ trạng thái "
             <Text
-              style={{color: getStatusColor(hkStatusData), fontWeight: '600'}}>
-              {hkStatusData}
+              style={{
+                color: getStatusColor(convertHkStatus(hkStatus)),
+                fontWeight: '600',
+              }}>
+              {convertHkStatus(hkStatus)}
             </Text>
             " sang "
             <Text

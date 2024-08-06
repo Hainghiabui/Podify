@@ -11,6 +11,9 @@ import {fetchRoomView} from 'src/api/fetchRooms';
 import {useQuery} from 'react-query';
 import RoomDetailModal from './RoomDetailModal';
 import {changeHkStatus} from 'src/api/changeHkStatus';
+import {fetchHkStatusChange} from 'src/api/fetchHkStatusChange';
+import {setHkStatus} from 'src/store/hkStatusSlice';
+import {setLoading} from 'src/store/loading';
 
 const FloorList: React.FC = () => {
   const [expandedFloors, setExpandedFloors] = useState<Record<string, boolean>>(
@@ -72,12 +75,9 @@ const FloorList: React.FC = () => {
     {
       enabled: !!selectedBuilding.value,
       onSuccess: data => {
-        dispatch(clearSelectedFloors());
         dispatch(setFloorData(data));
       },
-      onError: () => {
-        console.error('Error fetching data');
-      },
+      onError: () => {},
     },
   );
 
@@ -91,7 +91,18 @@ const FloorList: React.FC = () => {
     userName: 'admin',
   };
 
-  console.log(hkStatusChangeParams);
+  useQuery(
+    ['hkStatusChange', JSON.stringify(hkStatusChangeParams)],
+    () => fetchHkStatusChange(JSON.stringify(hkStatusChangeParams)),
+    {
+      enabled: !!hkStatus,
+      onSuccess: data => {
+        dispatch(setLoading(true));
+        
+      },
+      onError: () => {},
+    },
+  );
 
   const extractNumber = (text: string) => text.replace(/^\D+/g, '');
 

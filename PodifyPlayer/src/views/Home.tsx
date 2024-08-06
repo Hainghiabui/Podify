@@ -20,6 +20,9 @@ import FloorList from '../components/FloorList';
 import colors from '@utils/colors';
 import {fetchBuildings, fetchFloors} from 'src/api/fetchBuildings';
 import {useQuery} from 'react-query';
+import {fetchRoomView} from 'src/api/fetchRooms';
+import {setFloorData} from 'src/store/floorDataSlice';
+import {setLoading} from 'src/store/loading';
 
 const Home: React.FC = () => {
   const [buildingModalVisible, setBuildingModalVisible] =
@@ -37,35 +40,26 @@ const Home: React.FC = () => {
   const selectedBuilding = useSelector(
     (state: RootState) => state.selectedBuilding.selectedBuilding,
   );
+  const getFloors = useSelector(
+    (state: RootState) => state.getFloors.getFloors,
+  );
+  const loading = useSelector((state: RootState) => state.loading.loading);
 
   const {
     data: floorsData,
     error: floorsError,
     isLoading: floorsLoading,
-    refetch: refetchFloors,
   } = useQuery(
     ['floors', selectedBuilding.value],
     () => fetchFloors(selectedBuilding.value),
     {
       enabled: !!selectedBuilding.value,
       onSuccess: data => {
-        dispatch(clearSelectedFloors());
         dispatch(setFloors(data));
       },
-      onError: () => {
-        console.error('Error fetching data');
-      },
+      onError: () => {},
     },
   );
-
-  const dispatch = useDispatch();
-
-  const getFloors = useSelector(
-    (state: RootState) => state.getFloors.getFloors,
-  );
-
-  const extractNumber = (text: string) => text.replace(/^\D+/g, '');
-
   const selectFloors = (
     floors: {id: number; text: string; value: string}[],
   ) => {
@@ -80,6 +74,34 @@ const Home: React.FC = () => {
     setFloorModalVisible(false);
   };
 
+  const selectedFloors = useSelector(
+    (state: RootState) => state.selectedFloors.selectedFloors,
+  );
+
+  const roomViewParams = {
+    buildingCode: selectedBuilding.value || '',
+    floorCode: '',
+    dateRoom: '',
+    roomCode: '',
+    roomTypeCode: '',
+    blockStatus: '',
+    hkStatus: '',
+  };
+
+  const {refetch: refetchFloors} = useQuery(
+    ['roomView', JSON.stringify(roomViewParams)],
+    () => fetchRoomView(JSON.stringify(roomViewParams)),
+    {
+      enabled: !!selectedBuilding.value,
+      onSuccess: data => {},
+      onError: () => {},
+    },
+  );
+
+  const dispatch = useDispatch();
+
+  const extractNumber = (text: string) => text.replace(/^\D+/g, '');
+
   const handleDeleteAll = () => {
     dispatch(clearSelectedFloors());
   };
@@ -87,13 +109,21 @@ const Home: React.FC = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await refetchBuildings();
       await refetchFloors();
+      dispatch(setLoading(false));
     } catch (error) {
       console.error('Error refreshing data:', error);
     }
     setRefreshing(false);
   };
+  useEffect(() => {
+    if (loading) {
+      setRefreshing(true);
+      refetchFloors();
+      dispatch(setLoading(false));
+    }
+    setRefreshing(false);
+  }, [loading]);
 
   if (buildingsLoading || floorsLoading) {
     return (

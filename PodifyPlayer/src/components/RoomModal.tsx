@@ -53,9 +53,7 @@ const RoomModal: React.FC<Props> = ({visible, building, onClose}) => {
       onSuccess: data => {
         setRoomList(data);
       },
-      onError: () => {
-        console.error('Error fetching data');
-      },
+      onError: () => {},
     },
   );
 

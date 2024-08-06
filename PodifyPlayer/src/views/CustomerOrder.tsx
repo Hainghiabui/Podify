@@ -59,12 +59,10 @@ const CustomerOrder = () => {
         ) {
           setFloors(response.data.metadata);
         } else {
-          console.error('Error fetching data');
         }
         setLoading(false);
       })
       .catch(error => {
-        console.error('Error fetching data:', error);
         setLoading(false);
       });
   }, []);
